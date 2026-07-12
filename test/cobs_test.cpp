@@ -16,217 +16,205 @@ TEST_GROUP(CobsCodec)
    }
 };
 
+static void CobsCodecBody(const uint8_t* decoded, const ssize_t decoded_len, const uint8_t* encoded,  const ssize_t encoded_len, const uint8_t overhead)
+{
+    uint8_t actual[overhead + decoded_len] = {0};
+    memcpy(&actual[overhead], decoded, decoded_len);
+
+    ssize_t exp_size = encoded_len;
+    ssize_t result = COBS_Encode(&actual[0], &actual[overhead], decoded_len);
+
+    CHECK_EQUAL(exp_size, result);
+    MEMCMP_EQUAL(encoded, &actual[0], encoded_len);
+}
+
+#define COBS_CODEC_CALL_BODY CobsCodecBody(&decoded[0], sizeof(decoded), &encoded[0], sizeof(encoded), overhead)
 TEST(CobsCodec, empty)
 {
-    uint8_t actual[]    = {0x00, 0x00};
-    uint8_t expected[]  = {0x01, 0x00};
+    const uint8_t decoded[]     = {};
+    const uint8_t encoded[]     = {0x01, 0x00};
+    const ssize_t overhead      = 0;
 
-    CHECK_EQUAL(sizeof(expected), COBS_Encode(&actual[0], &actual[1], 0));
-    MEMCMP_EQUAL(&expected[0], &actual[0], sizeof(expected));
+    COBS_CODEC_CALL_BODY;
 }
 
 TEST(CobsCodec, many_delim)
 {
-    uint8_t actual[]    = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    uint8_t expected[]  = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00};
+    const uint8_t decoded[]     = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    const uint8_t encoded[]     = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00};
+    const ssize_t overhead      = 1;
 
-    CHECK_EQUAL(sizeof(expected), COBS_Encode(&actual[0], &actual[1], 8));
-    MEMCMP_EQUAL(&expected[0], &actual[0], sizeof(expected));
+    COBS_CODEC_CALL_BODY;
 }
 
 TEST(CobsCodec, no_delim)
 {
-    uint8_t actual[]    = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
-    uint8_t expected[]  = {0x09, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x00};
+    const uint8_t decoded[]     = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+    const uint8_t encoded[]     = {0x09, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x00};
+    const ssize_t overhead      = 1;
 
-    CHECK_EQUAL(sizeof(expected), COBS_Encode(&actual[0], &actual[1], 8));
-    MEMCMP_EQUAL(&expected[0], &actual[0], sizeof(expected));
+    COBS_CODEC_CALL_BODY;
 }
 
 TEST(CobsCodec, wiki_ex_1_encode)
 {
-    uint8_t actual[]    = {0x00, 0x00, 0x00};
-    uint8_t expected[]  = {0x01, 0x01, 0x00};
+    const uint8_t decoded[]     = {0x00};
+    const uint8_t encoded[]     = {0x01, 0x01, 0x00};
+    const ssize_t overhead      = 1;
 
-    CHECK_EQUAL(sizeof(expected), COBS_Encode(&actual[0], &actual[1], 1));
-    MEMCMP_EQUAL(&expected[0], &actual[0], sizeof(expected));
+    COBS_CODEC_CALL_BODY;
 }
 
 TEST(CobsCodec, wiki_ex_2_encode)
 {
-    uint8_t actual[]    = {0x00, 0x00, 0x00, 0x00};
-    uint8_t expected[]  = {0x01, 0x01, 0x01, 0x00};
+    const uint8_t decoded[]     = {0x00, 0x00};
+    const uint8_t encoded[]     = {0x01, 0x01, 0x01, 0x00};
+    const ssize_t overhead      = 1;
 
-    CHECK_EQUAL(sizeof(expected), COBS_Encode(&actual[0], &actual[1], 2));
-    MEMCMP_EQUAL(&expected[0], &actual[0], sizeof(expected));
+    COBS_CODEC_CALL_BODY;
 }
 
 TEST(CobsCodec, wiki_ex_3_encode)
 {
-    uint8_t actual[]    = {0x00, 0x00, 0x11, 0x00, 0x00};
-    uint8_t expected[]  = {0x01, 0x02, 0x11, 0x01, 0x00};
+    const uint8_t decoded[]     = {0x00, 0x11, 0x00};
+    const uint8_t encoded[]     = {0x01, 0x02, 0x11, 0x01, 0x00};
+    const ssize_t overhead      = 1;
 
-    CHECK_EQUAL(sizeof(expected), COBS_Encode(&actual[0], &actual[1], 3));
-    MEMCMP_EQUAL(&expected[0], &actual[0], sizeof(expected));
+    COBS_CODEC_CALL_BODY;
 }
 
 TEST(CobsCodec, wiki_ex_4_encode)
 {
-    uint8_t actual[]    = {0x00, 0x11, 0x22, 0x00, 0x33, 0x00};
-    uint8_t expected[]  = {0x03, 0x11, 0x22, 0x02, 0x33, 0x00};
+    const uint8_t decoded[]     = {0x11, 0x22, 0x00, 0x33};
+    const uint8_t encoded[]     = {0x03, 0x11, 0x22, 0x02, 0x33, 0x00};
+    const ssize_t overhead      = 1;
 
-    CHECK_EQUAL(sizeof(expected), COBS_Encode(&actual[0], &actual[1], 4));
-    MEMCMP_EQUAL(&expected[0], &actual[0], sizeof(expected));
+    COBS_CODEC_CALL_BODY;
 }
 
 TEST(CobsCodec, wiki_ex_5_encode)
 {
-    uint8_t actual[]    = {0x00, 0x11, 0x22, 0x33, 0x44, 0x00};
-    uint8_t expected[]  = {0x05, 0x11, 0x22, 0x33, 0x44, 0x00};
+    const uint8_t decoded[]     = {0x11, 0x22, 0x33, 0x44};
+    const uint8_t encoded[]     = {0x05, 0x11, 0x22, 0x33, 0x44, 0x00};
+    const ssize_t overhead      = 1;
 
-    CHECK_EQUAL(sizeof(expected), COBS_Encode(&actual[0], &actual[1], 4));
-    MEMCMP_EQUAL(&expected[0], &actual[0], sizeof(expected));
+    COBS_CODEC_CALL_BODY;
 }
 
 TEST(CobsCodec, wiki_ex_6_encode)
 {
-    uint8_t actual[]    = {0x00, 0x11, 0x00, 0x00, 0x00, 0x00};
-    uint8_t expected[]  = {0x02, 0x11, 0x01, 0x01, 0x01, 0x00};
+    const uint8_t decoded[]     = {0x11, 0x00, 0x00, 0x00};
+    const uint8_t encoded[]     = {0x02, 0x11, 0x01, 0x01, 0x01, 0x00};
+    const ssize_t overhead      = 1;
 
-    CHECK_EQUAL(sizeof(expected), COBS_Encode(&actual[0], &actual[1], 4));
-    MEMCMP_EQUAL(&expected[0], &actual[0], sizeof(expected));
+    COBS_CODEC_CALL_BODY;
 }
 
 static_assert(COBS_MAX_OFFSET == 0xFF, "Unexpected maximum COBS block length");
 TEST(CobsCodec, wiki_ex_7_encode)
 {
-    uint8_t actual[0x100];
-    uint8_t expected[sizeof(actual)];
+    uint8_t decoded[0x0FE];
+    uint8_t encoded[0x100];
+    const ssize_t overhead = 1;
 
-    actual[0x00]    = 0x00;
-    expected[0x00]  = 0xFF;
+    encoded[0x00]   = 0xFF;
 
-    for(uint16_t i = 1; i <= 0xFE; i++)
-        expected[i] = actual[i] = i;
+    for(uint16_t i = 0; i < sizeof(decoded); i++)
+        encoded[i+1] = decoded[i] = (i + 1) & 0xFF;
 
-    expected[sizeof(expected) - 1] = COBS_DELIM;
+    encoded[sizeof(encoded) - 1] = COBS_DELIM;
 
-    CHECK_EQUAL(sizeof(expected), COBS_Encode(&actual[0], &actual[1], COBS_MAX_BLOCK_LEN));
-    MEMCMP_EQUAL(&expected[0], &actual[0], sizeof(expected));
+    COBS_CODEC_CALL_BODY;
 }
 
 TEST(CobsCodec, wiki_ex_8_encode)
 {
+    uint8_t decoded[0x0FF];
+    uint8_t encoded[0x101];
     const uint8_t overhead = 2;
-    uint8_t actual[257];
-    uint8_t expected[sizeof(actual)];
-
 
     for(uint16_t i = 0; i < 0xFF; i++)
-        expected[i+1] = actual[i + overhead] = i;
+        encoded[i+1] = decoded[i] = i;
 
-    expected[0x000]  = 0x01;
-    expected[0x001]  = 0xFF;
-    expected[0x100] = COBS_DELIM;
+    encoded[0x000]  = 0x01;
+    encoded[0x001]  = 0xFF;
+    encoded[0x100]  = COBS_DELIM;
 
-    ssize_t exp_size = sizeof(expected);
-    ssize_t result = COBS_Encode(&actual[0], &actual[overhead], sizeof(actual) - overhead);
-
-    MEMCMP_EQUAL(&expected[0], &actual[0], sizeof(expected));
-    CHECK_EQUAL(exp_size, result);
+    COBS_CODEC_CALL_BODY;
 }
 
 TEST(CobsCodec, wiki_ex_9_encode)
 {
+    uint8_t decoded[0x0FF];
+    uint8_t encoded[0x102];
     const uint8_t overhead = 3;
-    uint8_t actual[258];
-    uint8_t expected[sizeof(actual)];
 
-    actual[0x00]    = 0x00;
-    expected[0x00]  = 0xFF;
+    for(uint16_t i = 0; i < sizeof(decoded); i++)
+        encoded[i+1] = decoded[i] = (i + 1) & 0xFF;
 
-    for(uint16_t i = 0; i < 0xFE; i++)
-        expected[i+1] = actual[i + overhead] = i + 1;
+    encoded[0x100] = decoded[0xFE] = 0xFF;
 
-    expected[0xFF]  = 0x02;
-    expected[0x100] = actual[overhead + 0xFE] = 0xFF;
-    expected[0x101] = COBS_DELIM;
+    encoded[0x000] = 0xFF;
+    encoded[0x0FF] = 0x02;
+    encoded[0x101] = COBS_DELIM;
+    // encoded[0x001] = 01;
 
-    CHECK_EQUAL(sizeof(expected), COBS_Encode(&actual[0], &actual[overhead], sizeof(actual) - overhead));
-    MEMCMP_EQUAL(&expected[0], &actual[0], sizeof(expected));
+    COBS_CODEC_CALL_BODY;
 }
 
 TEST(CobsCodec, wiki_ex_10_encode)
 {
+    uint8_t decoded[0x0FF];
+    uint8_t encoded[0x102];
     const uint8_t overhead = 3;
-    uint8_t actual[0x102];
-    uint8_t expected[sizeof(actual)];
-    memset(actual, 0, sizeof(actual));
 
-    actual[0x000]   = 0x00;
-    expected[0x000] = 0xFF;
+    for(uint16_t i = 0; i < sizeof(decoded); i++)
+        encoded[i+1] = decoded[i] = (i + 2) & 0xFF;
 
-    for(uint16_t i = 0; i < 0xFF; i++)
-        expected[i+1] = actual[i + overhead] = (i + 2) & 0xFF;
+    encoded[0x000] = 0xFF;
+    encoded[0x0FF] = 0x01;
+    encoded[0x100] = 0x01;
+    encoded[0x101] = COBS_DELIM;
+    // encoded[0x001] = 01;
 
-    actual[0xFF + overhead] = 0x00;
-    expected[0x0FF] = 0x01;
-    expected[0x100] = 0x01;
-    expected[0x101] = 0x00;
-
-    ssize_t exp_size = sizeof(expected);
-    ssize_t result = COBS_Encode(&actual[0], &actual[overhead], 0xFF);
-
-    CHECK_EQUAL(exp_size, result);
-    MEMCMP_EQUAL(&expected[0], &actual[0], sizeof(expected));
+    COBS_CODEC_CALL_BODY;
 }
 
 TEST(CobsCodec, wiki_ex_10_encode_regress)
 {
+    uint8_t decoded[0x100];
+    uint8_t encoded[0x102];
     const uint8_t overhead = 3;
-    uint8_t actual[0x102];
-    uint8_t expected[sizeof(actual)];
-    memset(actual, 0, sizeof(actual));
 
-    actual[0x000]   = 0x00;
-    expected[0x000] = 0xFF;
+    for(uint16_t i = 0; i < sizeof(decoded); i++)
+        encoded[i+1] = decoded[i] = (i + 2) & 0xFF;
+    decoded[0x0FF] = 0x01;
 
-    for(uint16_t i = 0; i < 0xFF; i++)
-        expected[i+1] = actual[i + overhead] = (i + 2) & 0xFF;
+    encoded[0x000] = 0xFF;
+    encoded[0x0FF] = 0x01;
+    encoded[0x100] = 0x01;
+    encoded[0x101] = COBS_DELIM;
+    // encoded[0x001] = 01;
 
-    actual[0xFF + overhead] = 0x01;
-    expected[0x0FF] = 0x01;
-    expected[0x100] = 0x01;
-    expected[0x101] = 0x00;
-
-    ssize_t exp_size = sizeof(expected);
-    ssize_t result = COBS_Encode(&actual[0], &actual[overhead], 0xFF);
-
-    CHECK_EQUAL(exp_size, result);
-    MEMCMP_EQUAL(&expected[0], &actual[0], sizeof(expected));
+    CobsCodecBody(&decoded[0], sizeof(decoded) - 1, &encoded[0], sizeof(encoded), overhead);
 }
 
 TEST(CobsCodec, wiki_ex_11_encode)
 {
-    const uint8_t overhead = 2;
-    uint8_t actual[257];
-    uint8_t expected[sizeof(actual)];
+    uint8_t decoded[0x0FF];
+    uint8_t encoded[0x101];
+    const uint8_t overhead = 3;
 
-    actual[0x00]    = 0x00;
-    expected[0x00]  = 0xFE;
+    for(uint16_t i = 0; i < sizeof(decoded); i++)
+        encoded[i+1] = decoded[i] = (i + 3) & 0xFF;
 
-    for(uint16_t i = 0; i < 0xFF; i++)
-        expected[i+1] = actual[i + overhead] = (i + 3) & 0xFF;
+    encoded[0x100] = decoded[0xFE] = 0x01;
 
-    expected[0x0FE] = 0x02;
-    expected[0x0FF] = 0x01;
-    expected[0x100] = COBS_DELIM;
+    encoded[0x000] = 0xFE;
+    encoded[0x0FE] = 0x02;
+    encoded[0x100] = COBS_DELIM;
 
-    ssize_t exp_size = sizeof(expected);
-    ssize_t result = COBS_Encode(&actual[0], &actual[overhead], sizeof(actual) - overhead);
-
-    MEMCMP_EQUAL(&expected[0], &actual[0], sizeof(expected));
-    CHECK_EQUAL(exp_size, result);
+    COBS_CODEC_CALL_BODY;
 }
 
 
