@@ -34,7 +34,7 @@ static void CobsCodecDecode(const uint8_t* decoded, const ssize_t decoded_len, c
     memcpy(&actual[0], encoded, encoded_len);
 
     ssize_t exp_size = decoded_len;
-    ssize_t result = COBS_Decode(&actual[0], &actual[0], decoded_len);
+    ssize_t result = COBS_Decode(&actual[0], &actual[0], encoded_len);
 
     CHECK_EQUAL(exp_size, result);
     MEMCMP_EQUAL(decoded, &actual[0], decoded_len);
