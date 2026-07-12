@@ -16,7 +16,7 @@ TEST_GROUP(CobsCodec)
    }
 };
 
-static void CobsCodecBody(const uint8_t* decoded, const ssize_t decoded_len, const uint8_t* encoded,  const ssize_t encoded_len, const uint8_t overhead)
+static void CobsCodecEncode(const uint8_t* decoded, const ssize_t decoded_len, const uint8_t* encoded,  const ssize_t encoded_len, const uint8_t overhead)
 {
     uint8_t actual[overhead + decoded_len] = {0};
     memcpy(&actual[overhead], decoded, decoded_len);
@@ -28,14 +28,28 @@ static void CobsCodecBody(const uint8_t* decoded, const ssize_t decoded_len, con
     MEMCMP_EQUAL(encoded, &actual[0], encoded_len);
 }
 
-#define COBS_CODEC_CALL_BODY CobsCodecBody(&decoded[0], sizeof(decoded), &encoded[0], sizeof(encoded), overhead)
+static void CobsCodecDecode(const uint8_t* decoded, const ssize_t decoded_len, const uint8_t* encoded,  const ssize_t encoded_len)
+{
+    uint8_t actual[encoded_len] = {0};
+    memcpy(&actual[0], encoded, encoded_len);
+
+    ssize_t exp_size = decoded_len;
+    ssize_t result = COBS_Decode(&actual[0], &actual[0], decoded_len);
+
+    CHECK_EQUAL(exp_size, result);
+    MEMCMP_EQUAL(decoded, &actual[0], decoded_len);
+}
+
+#define COBS_CODEC_ENCODE CobsCodecEncode(&decoded[0], sizeof(decoded), &encoded[0], sizeof(encoded), overhead)
+#define COBS_CODEC_DECODE CobsCodecDecode(&decoded[0], sizeof(decoded), &encoded[0], sizeof(encoded))
 TEST(CobsCodec, empty)
 {
     const uint8_t decoded[]     = {};
     const uint8_t encoded[]     = {0x01, 0x00};
     const ssize_t overhead      = 0;
 
-    COBS_CODEC_CALL_BODY;
+    COBS_CODEC_ENCODE;
+    COBS_CODEC_DECODE;
 }
 
 TEST(CobsCodec, many_delim)
@@ -44,7 +58,8 @@ TEST(CobsCodec, many_delim)
     const uint8_t encoded[]     = {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00};
     const ssize_t overhead      = 1;
 
-    COBS_CODEC_CALL_BODY;
+    COBS_CODEC_ENCODE;
+    COBS_CODEC_DECODE;
 }
 
 TEST(CobsCodec, no_delim)
@@ -53,7 +68,8 @@ TEST(CobsCodec, no_delim)
     const uint8_t encoded[]     = {0x09, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x00};
     const ssize_t overhead      = 1;
 
-    COBS_CODEC_CALL_BODY;
+    COBS_CODEC_ENCODE;
+    COBS_CODEC_DECODE;
 }
 
 TEST(CobsCodec, wiki_ex_1_encode)
@@ -62,7 +78,8 @@ TEST(CobsCodec, wiki_ex_1_encode)
     const uint8_t encoded[]     = {0x01, 0x01, 0x00};
     const ssize_t overhead      = 1;
 
-    COBS_CODEC_CALL_BODY;
+    COBS_CODEC_ENCODE;
+    COBS_CODEC_DECODE;
 }
 
 TEST(CobsCodec, wiki_ex_2_encode)
@@ -71,7 +88,8 @@ TEST(CobsCodec, wiki_ex_2_encode)
     const uint8_t encoded[]     = {0x01, 0x01, 0x01, 0x00};
     const ssize_t overhead      = 1;
 
-    COBS_CODEC_CALL_BODY;
+    COBS_CODEC_ENCODE;
+    COBS_CODEC_DECODE;
 }
 
 TEST(CobsCodec, wiki_ex_3_encode)
@@ -80,7 +98,8 @@ TEST(CobsCodec, wiki_ex_3_encode)
     const uint8_t encoded[]     = {0x01, 0x02, 0x11, 0x01, 0x00};
     const ssize_t overhead      = 1;
 
-    COBS_CODEC_CALL_BODY;
+    COBS_CODEC_ENCODE;
+    COBS_CODEC_DECODE;
 }
 
 TEST(CobsCodec, wiki_ex_4_encode)
@@ -89,7 +108,8 @@ TEST(CobsCodec, wiki_ex_4_encode)
     const uint8_t encoded[]     = {0x03, 0x11, 0x22, 0x02, 0x33, 0x00};
     const ssize_t overhead      = 1;
 
-    COBS_CODEC_CALL_BODY;
+    COBS_CODEC_ENCODE;
+    COBS_CODEC_DECODE;
 }
 
 TEST(CobsCodec, wiki_ex_5_encode)
@@ -98,7 +118,8 @@ TEST(CobsCodec, wiki_ex_5_encode)
     const uint8_t encoded[]     = {0x05, 0x11, 0x22, 0x33, 0x44, 0x00};
     const ssize_t overhead      = 1;
 
-    COBS_CODEC_CALL_BODY;
+    COBS_CODEC_ENCODE;
+    COBS_CODEC_DECODE;
 }
 
 TEST(CobsCodec, wiki_ex_6_encode)
@@ -107,7 +128,8 @@ TEST(CobsCodec, wiki_ex_6_encode)
     const uint8_t encoded[]     = {0x02, 0x11, 0x01, 0x01, 0x01, 0x00};
     const ssize_t overhead      = 1;
 
-    COBS_CODEC_CALL_BODY;
+    COBS_CODEC_ENCODE;
+    COBS_CODEC_DECODE;
 }
 
 static_assert(COBS_MAX_OFFSET == 0xFF, "Unexpected maximum COBS block length");
@@ -124,7 +146,8 @@ TEST(CobsCodec, wiki_ex_7_encode)
 
     encoded[sizeof(encoded) - 1] = COBS_DELIM;
 
-    COBS_CODEC_CALL_BODY;
+    COBS_CODEC_ENCODE;
+    COBS_CODEC_DECODE;
 }
 
 TEST(CobsCodec, wiki_ex_8_encode)
@@ -140,7 +163,8 @@ TEST(CobsCodec, wiki_ex_8_encode)
     encoded[0x001]  = 0xFF;
     encoded[0x100]  = COBS_DELIM;
 
-    COBS_CODEC_CALL_BODY;
+    COBS_CODEC_ENCODE;
+    COBS_CODEC_DECODE;
 }
 
 TEST(CobsCodec, wiki_ex_9_encode)
@@ -159,7 +183,8 @@ TEST(CobsCodec, wiki_ex_9_encode)
     encoded[0x101] = COBS_DELIM;
     // encoded[0x001] = 01;
 
-    COBS_CODEC_CALL_BODY;
+    COBS_CODEC_ENCODE;
+    COBS_CODEC_DECODE;
 }
 
 TEST(CobsCodec, wiki_ex_10_encode)
@@ -177,7 +202,8 @@ TEST(CobsCodec, wiki_ex_10_encode)
     encoded[0x101] = COBS_DELIM;
     // encoded[0x001] = 01;
 
-    COBS_CODEC_CALL_BODY;
+    COBS_CODEC_ENCODE;
+    COBS_CODEC_DECODE;
 }
 
 TEST(CobsCodec, wiki_ex_10_encode_regress)
@@ -196,7 +222,7 @@ TEST(CobsCodec, wiki_ex_10_encode_regress)
     encoded[0x101] = COBS_DELIM;
     // encoded[0x001] = 01;
 
-    CobsCodecBody(&decoded[0], sizeof(decoded) - 1, &encoded[0], sizeof(encoded), overhead);
+    CobsCodecEncode(&decoded[0], sizeof(decoded) - 1, &encoded[0], sizeof(encoded), overhead);
 }
 
 TEST(CobsCodec, wiki_ex_11_encode)
@@ -214,7 +240,8 @@ TEST(CobsCodec, wiki_ex_11_encode)
     encoded[0x0FE] = 0x02;
     encoded[0x100] = COBS_DELIM;
 
-    COBS_CODEC_CALL_BODY;
+    COBS_CODEC_ENCODE;
+    COBS_CODEC_DECODE;
 }
 
 
